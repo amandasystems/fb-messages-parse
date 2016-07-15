@@ -23,15 +23,12 @@ DBCONF = {
 if __name__ == '__main__':
     msgs = message.parse(MESSAGE_FILE)
 
-    import message
-
+    print("Parsing message file...")
     threads = message.parse(MESSAGE_FILE)
+    print("Message file parsed, begin database upload.")
 
-    db = MySQLdb.connect(**DBCONF)
-
-    for thread in threads:
-
-        with db.cursor() as cursor:
+    with MySQLdb.connect(**DBCONF) as cursor:
+        for thread in threads:
             # Add thread to database:
             cursor.execute(
                 u"""
@@ -50,16 +47,14 @@ if __name__ == '__main__':
             else:
                 print("Created thread with id %s." % thread_id)
 
-        for msg in thread.messages:
+            for msg in thread.messages:
 
-            with db.cursor() as cursor:
                 # Add author to database (ignoring duplicates)
                 cursor.execute(
                     u"""
                     INSERT IGNORE INTO author (name)
                     VALUES (%s)
                     """, [msg.author_name])
-                db.commit()
 
                 author_id = cursor.lastrowid
 
@@ -72,27 +67,13 @@ if __name__ == '__main__':
                 else:
                     print("Inserted author with id %s." % author_id)
 
-            with db.cursor() as cursor:
                 # Add message to database:
                 cursor.execute(
                     u"""
-                    INSERT INTO message (msg_text, pub_time, author_id)
-                    VALUES (%s, %s, %s);
-                    """, [msg.msg_text, msg.pub_time, author_id])
-
-                db.commit()
-
-                message_id = cursor.lastrowid
-
-            #print("Created message with id %s." % message_id)
-
-            with db.cursor() as cursor:
-                # Connect message and thread.
-                cursor.execute(
-                    u"""
-                    INSERT INTO thread_message (thread_id, message_id)
-                    VALUES (%s, %s);
-                    """, [thread_id, message_id])
+                    INSERT INTO message
+                    (msg_text, pub_time, author_id, thread_id)
+                    VALUES (%s, %s, %s, %s);
+                    """, [msg.msg_text, msg.pub_time, author_id, thread_id])
 
         # plt.plot(dates, 'ro')
         # plt.savefig('foo.png')
