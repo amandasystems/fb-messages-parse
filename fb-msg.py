@@ -6,7 +6,9 @@ import message
 
 import MySQLdb
 
-MESSAGE_FILE = "/home/albin/Downloads/fb-dump-2/html/messages.htm"
+import sys
+
+#MESSAGE_FILE = "/home/albin/Downloads/fb-dump-2/html/messages.htm"
 # längsta/medel/mediantid mellan kommunikation
 # meddelanden per person (respektive)
 # meddelanden per datum (inte snitt) + plot
@@ -21,10 +23,9 @@ DBCONF = {
 }
 
 if __name__ == '__main__':
-    msgs = message.parse(MESSAGE_FILE)
-
-    print("Parsing message file...")
-    threads = message.parse(MESSAGE_FILE)
+    filename = sys.argv[1]
+    print("Parsing message file %s..." % filename)
+    threads = message.parse(filename)
     print("Message file parsed, begin database upload.")
 
     with MySQLdb.connect(**DBCONF) as cursor:
