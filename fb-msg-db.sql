@@ -21,7 +21,7 @@ CREATE TABLE author (
 
 CREATE TABLE message (
        id int PRIMARY KEY AUTO_INCREMENT,
-       msg_text varchar(2056),
+       msg_text TEXT,
        pub_time DATETIME,
        author_id int,
        thread_id int,
