@@ -34,3 +34,42 @@ pip install -r requirements.txt
 
 Just the `pip install` part will probably work without virtualenv, but
 it will clutter your system with packages.
+
+## Interesting queries
+
+Most popular (# messages) per conversation:
+
+```sql
+select count(*) as msg_count, thread.title from message join thread on thread_id=thread.id group by thread_id order by msg_count;
+```
+
+Messages per day and author:
+
+```sql
+select date(message.pub_time) as pub_date, count(*) from message where thread_id=63 and author_id=22137 group by pub_date order by pub_date;
+```
+
+You can generate a list of dates to check for non-presence of a date in a set (say, days you did _not_ receive a message) using this code (thanks, [Stack Overflow](http://stackoverflow.com/questions/2157282/generate-days-from-date-range)!):
+
+```sql
+select a.Date 
+from (
+    select curdate() - INTERVAL (a.a + (10 * b.a) + (100 * c.a)) DAY as Date
+    from (select 0 as a union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as a
+    cross join (select 0 as a union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as b
+    cross join (select 0 as a union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as c
+) a
+where a.Date between '2010-01-20' and '2010-01-24' 
+```
+
+This allows us to ask things like "how many days of the month did I not receive a message from person X during the period A-B?:
+
+```sql
+select year(a.Date), month(a.Date), count(*) silent_days from            (select curdate() - INTERVAL (a.a + (10 * b.a) + (100 * c.a)) DAY as Date                    from (select 0 as a union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as a                         cross join (select 0 as a union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as b     cross join (select 0 as a union all select 1 union all select 2 union all select 3 union all select 4 union all select 5 union all select 6 union all select 7 union all select 8 union all select 9) as c ) a where a.Date between '2015-12-18' and '2016-07-30' and a.Date not in (select distinct date(message.pub_time) as pub_date from message where thread_id=63        and author_id=22137) group by month(a.Date),year(a.Date) order by silent_days;
+```
+
+Perhaps, it is easier to do this by counting _active_ days in stead:
+
+```sql
+select year(day), month(day), count(*) from(select distinct date(pub_time) as day from message where thread_id=1 and author_id=1) as day group by year(day), month(day) order by year(day), month(day);
+```

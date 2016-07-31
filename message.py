@@ -5,6 +5,12 @@ import dateparser
 import re
 from copy import copy
 from collections import namedtuple
+from zipfile import ZipFile
+
+# Filter out characters whose ord() is outside this interval (exclusive)
+# Will kill most emoji and other weird data which will not work with MySQL.
+MIN_CHAR_ORD = 31
+MAX_CHAR_ORD = 300
 
 Message = namedtuple('Message',
                      ['author_name',
@@ -41,6 +47,7 @@ class ParseError(Exception):
 def clean_str_copy(txt):
     """Return a whitespace-cleaned copy of txt"""
     text = copy(txt)
+    text = "".join(i for i in text if MIN_CHAR_ORD < ord(i) < MAX_CHAR_ORD)
 
     return (re.sub(r'\s+', ' ', text)
             .strip()
@@ -94,7 +101,7 @@ def make_message(msg):
 
 
 def parse(filename):
-    with open(filename) as f:
+    with ZipFile(filename, mode='r').open('html/messages.htm', mode='r') as f:
         soup = BeautifulSoup(f, 'lxml')
 
         threads = soup.find_all("div", class_="thread")
